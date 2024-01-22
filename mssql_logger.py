@@ -20,7 +20,7 @@ class MSSQLLogger:
     def __init__(self, server, database, username, password):
         self.cursor = None
         self.connection = None
-        self.connection_str = f'DRIVER={{SQL Server}};SERVER={server};DATABASE={database};UID={username};PWD={password}'
+        self.connection_str = f'DRIVER={{SQL Server}};SERVER={server};DATABASE={database};UID={username};PWD={password};Encrypt={True};TrustServerCertificate={True}'
         self.INTERVAL = 60  # interval in seconds for logging timestamp
 
     def connect(self):
@@ -62,6 +62,7 @@ class MSSQLLogger:
         while True:
             try:
                 timestamp = datetime.now()
+                timestamp = timestamp.strftime('%Y-%m-%d %H:%M:%S')
                 self.cursor.execute(f"INSERT INTO timestamps (timestamp) VALUES ('{timestamp}')")
                 self.connection.commit()
                 print(f"Timestamp {timestamp} has been logged to the database.")
