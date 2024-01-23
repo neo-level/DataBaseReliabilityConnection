@@ -5,53 +5,21 @@ from datetime import datetime
 
 class MSSQLLogger:
     """
-    Class for logging timestamps to a Microsoft SQL Server database.
-
-    :param server: The server name or IP address.
-    :type server: str
-    :param database: The name of the database.
-    :type database: str
-    :param username: The username used for authentication.
-    :type username: str
-    :param password: The password used for authentication.
-    :type password: str
+    This class is used to log timestamps to a Microsoft SQL Server database at regular intervals.
     """
 
-    def __init__(self, server, database, username, password):
-        self.cursor = None
-        self.connection = None
-        self.connection_str = f'DRIVER={{SQL Server}};SERVER={server};DATABASE={database};UID={username};PWD={password};Encrypt={True};TrustServerCertificate={True}'
-        self.INTERVAL = 60  # interval in seconds for logging timestamp
+    def __init__(self, database, interval):
+        self.interval = interval
+        self.database = database
+        database.create_table('timestamps', {"timestamp": "datetime"})
 
-    def connect(self):
+    def get_timestamp(self):
         """
-        Connects to the database using the specified connection string.
+        Returns the current timestamp in the format "YYYY-MM-DD HH:MM:SS".
+        """
 
-        :return: None
-        """
-        try:
-            self.connection = pyodbc.connect(self.connection_str)
-            self.cursor = self.connection.cursor()
-            print("Database connection successful.")
-        except pyodbc.Error as e:
-            print("Database connection error: ", e)
-
-    def create_table(self):
-        """
-        Create a table named 'timestamps' if it does not already exist.
-
-        :return: None
-        """
-        self.cursor.execute('''
-            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'timestamps' AND type = 'U') 
-            BEGIN 
-                CREATE TABLE timestamps ( 
-                    timestamp datetime 
-                ) 
-            END
-        ''')
-        self.connection.commit()
-        print("'timestamps' table is ready for use.")
+        timestamp = datetime.now()
+        return timestamp.strftime("%Y-%m-%d %H:%M:%S")
 
     def log_timestamp(self):
         """
@@ -61,11 +29,8 @@ class MSSQLLogger:
         """
         while True:
             try:
-                timestamp = datetime.now()
-                timestamp = timestamp.strftime('%Y-%m-%d %H:%M:%S')
-                self.cursor.execute(f"INSERT INTO timestamps (timestamp) VALUES ('{timestamp}')")
-                self.connection.commit()
-                print(f"Timestamp {timestamp} has been logged to the database.")
+                self.database.insert('timestamps', {"timestamp": self.get_timestamp()})
+                print(f"Timestamp {self.get_timestamp()} has been logged to the database.")
             except pyodbc.Error as e:
                 print("Error while logging timestamp: ", e)
-            time.sleep(self.INTERVAL)
+            time.sleep(self.interval)
